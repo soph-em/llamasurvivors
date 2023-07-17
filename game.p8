@@ -76,13 +76,13 @@ function spit()
 end
 
 function shootSpit()
-    add(spits, {x = llama.x, y = llama.y, dx = llama.isFacingLeft and -2 or 2})
+    add(spits, {x = llama.x, y = llama.y, dx = llama.isFacingLeft and -4 or 4})
 end
 
 function updateSpits()
     for i = #spits, 1, -1 do
         local spit = spits[i]
-        spit.x = spit.x + spit.dx
+        spit.x = spit.x + spit.dx 
 
         if spit.x > 128 then
             del(spits, i)
@@ -116,8 +116,8 @@ function _draw()
     cls()
     map(0, 0, 0, 0, 128, 32)
     spr(llama.sprite, llama.x, llama.y)
-	print(enemies[1].collided,7)
-	print(enemies[2].collided,7)
+	-- print(enemies[1].collisionCount,7)
+	-- print(enemies[2].collisionCount,7)
     for spit in all(spits) do
         spr(3, spit.x, spit.y)
     end
@@ -164,23 +164,30 @@ function moveEnemyBasedOnRandomNumber(enemy)
         enemy.y = enemy.y - enemy.speed
     end
 end
-
+-- function removeEnemy(tbl, item)
+--     for i, v in ipairs(tbl) do
+--         if v == item then
+--             del(tbl, i)
+--             break
+--         end
+--     end
+-- end
 function checkCollisionWithSpits(enemy)
-    local collisionCount = 0
 
     for spit in all(spits) do
         if spit.x >= enemy.x and spit.x <= enemy.x + 8
            and spit.y >= enemy.y and spit.y <= enemy.y + 8 then
-			collisionCount +=1
+			enemy.collisionCount +=1
 
-            if collisionCount == 1 then
+            -- if enemy.collisionCount >= 1 then
                 enemy.collided = true 
-            end
+            -- end
 
             spit.collided = true 
 
-            if collisionCount >= 3 then
-                enemy.dead = true
+            if enemy.collisionCount >= 3 then
+                del(enemies, enemy)
+				del(spits, i)
                 break
             end
         end
@@ -209,6 +216,7 @@ end
 
 function makeEnemy(x, y)
     local enemy = {}
+	enemy.collisionCount = 0
 	enemy.collided = false
     enemy.x = x
     enemy.y = y
