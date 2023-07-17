@@ -1,196 +1,202 @@
 pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
-llama = {x=100, y=100, s=16, animating = false, left=true}
-spitleft = {16,17,18,16}
-spitright = {32,33,34,32}
-index = 0
-animation_speed = 0.5
-animation_timer = 0
-spits = {} 
+-- Variables
+llama = {x = 100, y = 100, sprite = 16, animating = false, isFacingLeft = true}
+spitLeft = {16, 17, 18, 16}
+spitRight = {32, 33, 34, 32}
+spitIndex = 0
+animationSpeed = 0.5
+animationTimer = 0
+spits = {}
+enemyIndex = 0
 
 function _init()
-make_enm(rnd(126),rnd(126))
-make_enm(rnd(126),rnd(126))
+    makeEnemy(rnd(126), rnd(126))
+    makeEnemy(rnd(126), rnd(126))
 end
 
 function _update()
-	timer()
-	for i, f in pairs(enm) do
-		enm_move(f)
-	end
-	
-	if btn(➡️) then 
-		llama.x = llama.x+1
-		llama.left = false
-		llama.s=32
-	end
-	if btn(⬅️) then 
-		llama.x = llama.x-1 
-		llama.left = true
-		llama.s=16
-	end
-	if btn(⬇️) then 
-		llama.y = llama.y+1
-	end
-	if btn(⬆️) then 
-		llama.y = llama.y-1
-	end
-	if btnp(❎) then
-		spit()
-	end
-	
-	for i = #spits, 1, -1 do
-		local llamaspit = spits[i]
-		llamaspit.x = llamaspit.x + llamaspit.dx
-		
-		if llamaspit.x > 128 then
-			del(spits, i)
+    timer()
+    
+    for i, enemy in pairs(enemies) do
+        moveEnemy(enemy)
+    end
+    
+    if btn(➡️) then
+        llama.x = llama.x + 1
+        llama.isFacingLeft = false
+        llama.sprite = 32
+    end
+    
+    if btn(⬅️) then
+        llama.x = llama.x - 1
+        llama.isFacingLeft = true
+        llama.sprite = 16
+    end
+    
+    if btn(⬇️) then
+        llama.y = llama.y + 1
+    end
+    
+    if btn(⬆️) then
+        llama.y = llama.y - 1
+    end
+    
+    if btnp(❎) then
+        spit()
+    end
+    
+    for i = #spits, 1, -1 do
+        local spit = spits[i]
+        spit.x = spit.x + spit.dx
+        
+        if spit.x > 128 then
+            del(spits, i)
+        end
+    end
+    
+    if llama.animating then
+        if llama.isFacingLeft then
+            llama.sprite = spitLeft[spitIndex]
+            spitIndex = spitIndex + 1
+            
+            if spitIndex >= #spitLeft then
+                spitIndex = 1
+                llama.sprite = 16
+                llama.animating = false
+            end
+        else
+            llama.sprite = spitRight[spitIndex]
+            spitIndex = spitIndex + 1
+            
+            if spitIndex >= #spitRight then
+                spitIndex = 1
+                llama.sprite = 32
+                llama.animating = false
+            end
+        end
+    end
+end
 
-		end
-	end
-	if llama.animating == true then
-		if llama.left == true then
-			llama.s = spitleft[index]
-			index = index + 1
-			
-			if index >= #spitleft then
-				index = 1     
-				llama.s=16
-				llama.animating = false
-			end
-  	elseif llama.left == false then
-		llama.s = spitright[index]
-		index = index + 1
-		
-		if index >= #spitright then
-			index = 1
-			llama.s=32
-			llama.animating = false
-		end 
-		
-	end
-end
-end
-	
 function spit()
-	llama.animating = true
-	shootspit()
-end	
-       
-function shootspit()
-	add(spits,{x=llama.x, y=llama.y, dx= llama.left and -2 or 2})
+    llama.animating = true
+    shootSpit()
 end
 
+function shootSpit()
+    add(spits, {x = llama.x, y = llama.y, dx = llama.isFacingLeft and -2 or 2})
+end
 
 function _draw()
-	cls()
-	map(0,0,0,0,128,32)
-	spr(llama.s, llama.x, llama.y)
-	for llamaspit in all(spits) do
-		spr(3, llamaspit.x, llamaspit.y)
-	end
-	foreach(enm, draw_enm)	
+    cls()
+    map(0, 0, 0, 0, 128, 32)
+    spr(llama.sprite, llama.x, llama.y)
+    
+    for spit in all(spits) do
+        spr(3, spit.x, spit.y)
+    end
+    
+    foreach(enemies, drawEnemy)
 end
-		
-		
--->8
---enemies
-enm={}
-function enm_move(f)
-	if f.x<=0 then 
-		f.x = 125 
-	end
-	if f.x>=127 then 
-		f.x = 0 
-	end
-	if f.y<=0 then 
-		f.y = 125 
-	end
-	if f.y>=128 then 
-		f.y = 0 
-	end
-	
-	if tm==15 or tm==29 then
-		f.rn=flr(rnd(4))
-	end
-	 
-	if f.rn==0 then 
-		f.x+=f.speed 
-	end
-	if f.rn==1 then 
-		f.x-=f.speed 
-	end
-	if f.rn==2 then 
-		f.y+=f.speed 
-	end
-	if f.rn==3 then 
-		f.y-=f.speed 
-	end
-	
-	lc=0
-	col=false
-	for llamaspit in all(spits) do
-		local dist = sqrt((llamaspit.x - f.x) ^ 2 + (llamaspit.y - f.y) ^ 2)
-		if dist < 8 then
-			lc += 1
-		end
-		-- if llamaspit.x <= f.x and f.x <= llamaspit.x+3 or
-		-- 	llamaspit.x <= f.x+3 and f.x+3 <= llamaspit.x+3 then 
-		-- 	lc += 1
-		-- end
-		-- if llamaspit.y <= f.y and f.y <= llamaspit.y +3 or
-		-- 	llamaspit.y <= f.y+3 and f.y+3 <= llamaspit.y+3 then 
-		-- 	lc +=1
-		-- end
-	
-		if lc >=1 then 
-			col=true 
-		end
-		if lc >=3 then 
-			dead=true 
-		end
-	end
-	if col == true then 
-		f.animating = true
-	end
-	enmindex = 0
-	enminjure = {64,65,64,65,64}
-	if f.animating then
-		f.sprite = enminjure[enmindex]
-		enmindex = enmindex + 1
-		if enmindex >= #enminjure then
-			enmindex = 1
-			f.sprite = 64
-			f.animating = false	
-		end
-		
-	end
 
+-- Enemies
+enemies = {}
+
+function moveEnemy(enemy)
+    if enemy.x <= 0 then
+        enemy.x = 125
+    end
+    
+    if enemy.x >= 127 then
+        enemy.x = 0
+    end
+    
+    if enemy.y <= 0 then
+        enemy.y = 125
+    end
+    
+    if enemy.y >= 128 then
+        enemy.y = 0
+    end
+    
+    if tm == 15 or tm == 29 then
+        enemy.randomNumber = flr(rnd(4))
+    end
+    
+    if enemy.randomNumber == 0 then
+        enemy.x = enemy.x + enemy.speed
+    elseif enemy.randomNumber == 1 then
+        enemy.x = enemy.x - enemy.speed
+    elseif enemy.randomNumber == 2 then
+        enemy.y = enemy.y + enemy.speed
+    elseif enemy.randomNumber == 3 then
+        enemy.y = enemy.y - enemy.speed
+    end
+    
+    local collisionCount = 0
+    local collided = false
+    
+    for spit in all(spits) do
+        local dist = sqrt((spit.x - enemy.x) ^ 2 + (spit.y - enemy.y) ^ 2)
+        
+        if dist < 8 then
+            collisionCount += 1
+        end
+        
+        if collisionCount >= 1 then
+            collided = true
+        end
+        
+        if collisionCount >= 3 then
+            enemy.dead = true
+        end
+    end
+    
+    if collided then
+        enemy.animating = true
+    end
+    enmInjure = {64,65,64,65,64}
+    if enemy.animating then
+        enemy.sprite = enmInjure[enemyIndex]
+        enemyIndex = enemyIndex + 1
+        
+        if enemyIndex >= #enmInjure then
+            enemyIndex = 1
+            enemy.sprite = 64
+            enemy.animating = false
+            collided = false
+            collisionCount = 0
+        end
+    end
 end
-function make_enm(x,y)
-	local f = {}
-	f.x=x
-	f.y=y
-	f.speed=1
-	f.animating=false
-	//f.rn=0
-	
-	f.rn = flr(rnd(4))
-	f.sprite=64
-	add(enm,f)
+
+function makeEnemy(x, y)
+    local enemy = {}
+    enemy.x = x
+    enemy.y = y
+    enemy.speed = 1
+    enemy.animating = false
+    enemy.randomNumber = flr(rnd(4))
+    enemy.sprite = 64
+    add(enemies, enemy)
 end
-function draw_enm(f)
-spr(f.sprite,f.x,f.y)
+
+function drawEnemy(enemy)
+    spr(enemy.sprite, enemy.x, enemy.y)
 end
-function rand()
-end
-tm=0
+
+-- Timer
+tm = 0
+
 function timer()
-	tm+=1
-	if tm>=30 then tm = 0 end
+    tm += 1
+    
+    if tm >= 30 then
+        tm = 0
+    end
 end
-	
+
 
 __gfx__
 00000000bbbbbbbbbbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
